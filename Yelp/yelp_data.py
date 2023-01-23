@@ -164,12 +164,12 @@ def csvSampling(csvName):
     [csvData,aa[qua*3:],"3"]]
 
     pool = mp.Pool(processes=4)
-    pool.starmap(sampleMP,work)
+    pool.starmap(samplingMultiProcess,work)
     pool.close()
     pool.join()
     
     
-def sampleMP(csvData, aa, pp):
+def samplingMultiProcess(csvData, aa, pp):
     print("{pp} start".format(pp = pp))
     testData = pd.DataFrame()
     trainData = pd.DataFrame()
@@ -209,14 +209,7 @@ def processing():
 
     testData.to_csv("test_01.csv",header=False, index=False)
 
-# business = pd.read_csv("business.csv", engine='python', encoding = "ISO-8859-1")
-# f = open("cityList.txt","w",encoding="utf-8")
-# for i in business['city'].unique():
-#     f.write("{a} : {b}\n".format(a=i,b=len(business[business['city'] == i])))
-# f.close()
-
-#processing()
-if __name__ == "__main__":
+def dataSampling():
     csvData = pd.read_csv("PhiladelphiaReview_student.csv", engine='python', encoding = "ISO-8859-1",names =['user_id', 'business_id','text'], header = None)
     entireNum = len(csvData)
     csvData = csvData.sample(frac=1).reset_index(drop=True)
@@ -229,7 +222,7 @@ if __name__ == "__main__":
     [csvData,csvData['user_id'].unique()[qua*3:],"3"]]
 
     pool = mp.Pool(processes=4)
-    pool.starmap(sampleMP,work)
+    pool.starmap(samplingMultiProcess,work)
     pool.close()
     pool.join()
     # test0 = pd.read_csv("0_test.csv", engine='python', encoding = "ISO-8859-1",names =['user_id', 'business_id','text'], header = None)
@@ -254,21 +247,14 @@ if __name__ == "__main__":
     # mergedTest.to_csv("merged_test.csv",header=False, index=False)
     # mergedTrain.to_csv("merged_train.csv",header=False, index=False)
 
-
-#csvSampling("PhiladelphiaReview_student")
-
-# extractCertainCityData("Philadelphia")
-# print("a")
-# createCityReviewData("Philadelphia")
-# print("a")
-# csv2json("Philadelphia_student","Philadelphia_student",('business_id', 'latitude', 'longitude', 'categories'))
-# print("a")
-# csv2json("PhiladelphiaReview_student","PhiladelphiaReview_student",('user_id', 'business_id','text'))
-
-#createUserCheckinData("Philadelphia")
-# print("b")
-# createUserCheckinData_10("Philadelphia")
-# test = pickle_load("Philadelphia10.pkl")
-
-# print(test)
-# print(test.shape)
+if __name__ == "__main__":
+    reviewData = pd.read_csv("./Yelp/data/Philadelphia_review.csv", engine='python', encoding = "ISO-8859-1",names =['user_id', 'business_id','text'], header = None)
+    businessData = pd.read_csv("./Yelp/data/Philadelphia_business.csv", engine='python', encoding = "ISO-8859-1",names =['business_id','latitude', 'longitude','categories'], header = None)
+    latitude_max = businessData['latitude'].max()
+    latitude_min = businessData['latitude'].min()
+    print(latitude_max)
+    print(latitude_min)
+    longitude_max = businessData['longitude'].max()
+    longitude_min = businessData['longitude'].min()
+    print(longitude_max)
+    print(longitude_min)
