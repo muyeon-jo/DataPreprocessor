@@ -125,8 +125,8 @@ def createUserCheckinData_10(city:str):
     pickle_save(arr,city+"10.pkl")
 
 def createCityReviewData(city:str):
-    reviews = pd.read_csv("review.csv", engine='python', encoding = "ISO-8859-1")
-    citydata = pd.read_csv(city+".csv", engine='python', encoding = "ISO-8859-1")
+    reviews = pd.read_csv("./Yelp/data/review.csv", engine='python', encoding = "ISO-8859-1")
+    citydata = pd.read_csv("./Yelp/data/"+city+".csv", engine='python', encoding = "ISO-8859-1")
     citydata = citydata.drop(['Unnamed: 0', 'name', 'address', 'postal_code',  'stars', 'review_count','is_open', 'attributes', 'hours','city','state'],axis=1)
     #citydata = citydata.drop(['Unnamed: 0'],axis=1)
     print("citydata")
@@ -142,7 +142,22 @@ def createCityReviewData(city:str):
 
     newReviews = reviews.loc[qu]
     newReviews.to_csv(city+"Review_student.csv", header=False, index=False)
-    
+def extractReviewData(city:str):
+    reviews = pd.read_csv("./Yelp/data/review.csv", engine='python', encoding = "ISO-8859-1")
+    citydata = pd.read_csv("./Yelp/data/"+city+".csv", engine='python', encoding = "ISO-8859-1")
+    #citydata = citydata.drop(['Unnamed: 0'],axis=1)
+    print("citydata")
+    print(citydata.columns)
+    print("reviewdata")
+    print(reviews.columns)
+    reviews = reviews.drop(['review_id', 'stars', 'useful', 'funny','cool', 'date'], axis = 1)
+
+    qu = (reviews['business_id']==citydata['business_id'][0])
+    for i in citydata['business_id']:
+        qu = qu | (reviews['business_id'] == i)
+
+    newReviews = reviews.loc[qu]
+    newReviews.to_csv("./Yelp/data/"+city+"Review.csv", header=False, index=False)
 def csv2json(csvName:str, jsonName:str, fileIdNames):
     csvfile = open(csvName+'.csv','rt', encoding='utf-8')
     jsonfile= open(jsonName+'.json','w')
@@ -248,13 +263,4 @@ def dataSampling():
     # mergedTrain.to_csv("merged_train.csv",header=False, index=False)
 
 if __name__ == "__main__":
-    reviewData = pd.read_csv("./Yelp/data/Philadelphia_review.csv", engine='python', encoding = "ISO-8859-1",names =['user_id', 'business_id','text'], header = None)
-    businessData = pd.read_csv("./Yelp/data/Philadelphia_business.csv", engine='python', encoding = "ISO-8859-1",names =['business_id','latitude', 'longitude','categories'], header = None)
-    latitude_max = businessData['latitude'].max()
-    latitude_min = businessData['latitude'].min()
-    print(latitude_max)
-    print(latitude_min)
-    longitude_max = businessData['longitude'].max()
-    longitude_min = businessData['longitude'].min()
-    print(longitude_max)
-    print(longitude_min)
+    extractReviewData("39.86492399 -75.651673 _ 40.247267 -74.8937988281")

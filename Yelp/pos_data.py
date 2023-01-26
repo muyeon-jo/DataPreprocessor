@@ -13,6 +13,20 @@ def pickle_load(name):
 def pickle_save(data, name):
     with open(name, 'wb') as f:
         pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
+
+
+def extractBusinessWithPos(max_latitude, max_longitude, min_latitude, min_longitude):
+    business = pd.read_csv("./Yelp/data/business.csv", engine='python', encoding = "ISO-8859-1")
+    business = business.drop(["state","city","name","address","postal_code","stars","review_count","is_open","attributes","hours"],axis=1)
+    temp = business[business['latitude'] >=min_latitude]
+    temp = temp[business['longitude']>=min_longitude]
+    temp = temp[ business['latitude']<=max_latitude]
+    specifics = temp[ business['longitude']<=max_longitude]
+     
+
+    print("specific business num: "+str(len(specifics)))
+    specifics.to_csv("./Yelp/data/"+str(min_latitude)+" "+str(min_longitude)+" _ "+str(max_latitude)+" "+str(max_longitude)+".csv",header=True,index =False)
+
 def getAreaWithPos(business:str, review:str, size):
     """
     가게 데이터를 이용하여 전체 지역을 모두 포함하는 크기의 직사각형을 계산한다.
@@ -64,7 +78,7 @@ def getArea(business:str, review:str, size):
     """
     """
     reviewData = pd.read_csv("./Yelp/data/"+review+".csv", engine='python', encoding = "ISO-8859-1",names =['user_id', 'business_id','text'], header = None)
-    businessData = pd.read_csv("./Yelp/data/"+business+".csv", engine='python', encoding = "ISO-8859-1",names =['business_id','latitude', 'longitude','categories'], header = None)
+    businessData = pd.read_csv("./Yelp/data/"+business+".csv", engine='python', encoding = "ISO-8859-1")
     latitude_max = businessData['latitude'].max()
     latitude_min = businessData['latitude'].min()
     longitude_max = businessData['longitude'].max()
@@ -159,4 +173,4 @@ def getArea(business:str, review:str, size):
     plt.colorbar()
     plt.show()
 if __name__ == "__main__":
-    getArea("Philadelphia_business","Philadelphia_review",1000)
+    getArea("39.86492399 -75.651673 _ 40.247267 -74.8937988281","39.86492399 -75.651673 _ 40.247267 -74.8937988281Review",1000)
