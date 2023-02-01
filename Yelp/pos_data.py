@@ -5,6 +5,7 @@ import math
 import multiprocessing as mp
 import pickle
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 def pickle_load(name):
     with open(name, 'rb') as f:
         data = pickle.load(f)
@@ -79,6 +80,8 @@ def getArea(business:str, review:str, size):
     """
     reviewData = pd.read_csv("./Yelp/data/"+review+".csv", engine='python', encoding = "ISO-8859-1",names =['user_id', 'business_id','text'], header = None)
     businessData = pd.read_csv("./Yelp/data/"+business+".csv", engine='python', encoding = "ISO-8859-1")
+    print(len(reviewData))
+    print(len(businessData))
     latitude_max = businessData['latitude'].max()
     latitude_min = businessData['latitude'].min()
     longitude_max = businessData['longitude'].max()
@@ -98,14 +101,16 @@ def getArea(business:str, review:str, size):
     rownum = int(height1/size)
     delta = (longitude_max - longitude_min)/colnum
     areaRangeArr = np.zeros((rownum, colnum, 4))
-    areaBusinessArr = []
+    areaBusinessArr = dict()
+    for i in range(rownum):
+        areaBusinessArr[i]=dict()
+        for j in range(colnum):
+            areaBusinessArr[i][j]=dict()
     businessPos = dict()
     for i in range(rownum):
         lat_min = latitude_min + (latitude_max - latitude_min)/rownum*(i)
         lat_max = latitude_min + (latitude_max - latitude_min)/rownum*(i+1)
-        line = []
         for j in range(colnum):
-            point = []
             lng_min = longitude_min + delta * j
             lng_max = longitude_min + delta * (j+1)
 
@@ -128,15 +133,19 @@ def getArea(business:str, review:str, size):
 
             for index, data in temp.iterrows():
                 businessPos[data['business_id']] = (i,j)
-                point.append([data['business_id'],data['categories']])
-            line.append(point)
-        areaBusinessArr.append(line)
+                
+                temp = data['categories']
+                if type(temp) == str:
+                    temp = temp.split(", ")
+                    areaBusinessArr[i][j][data['business_id']] = temp
     # businessPos = pickle_load("./Yelp/data/"+business+" businessPos")
     # areaRangeArr = pickle_load("./Yelp/data/"+business+" Area range")
     # areaBusinessArr = pickle_load("./Yelp/data/"+business+" area list")
     userVisitData = dict()
     areaCategory = dict()
     visitedArea = np.zeros((rownum,colnum))
+    visitedX = []
+    visitedY = []
     for i in range(rownum):
         areaCategory[i]=dict()
         for j in range(colnum):
@@ -151,6 +160,8 @@ def getArea(business:str, review:str, size):
         
 
         pos = businessPos[data['business_id']]
+        visitedX.append(pos[1])
+        visitedY.append(pos[0])
         visitedArea[pos[0]][pos[1]] += 1
         temp = businessData[businessData['business_id']==data['business_id']]
         if pd.notnull(temp['categories']).sum() > 0:
@@ -172,5 +183,127 @@ def getArea(business:str, review:str, size):
     plt.matshow(visitedArea)
     plt.colorbar()
     plt.show()
+
+def drawInGraphs(city:str):
+    businessPos = pickle_load("./Yelp/data/"+city+" businessPos")
+    userVisitData = pickle_load("./Yelp/data/"+city+" userVisitData")
+    visitedArea = pickle_load("./Yelp/data/"+city+" visitedArea")
+    areaCategory = pickle_load("./Yelp/data/"+city+" areaCategory")
+
+    """
+    사용자들이 방문한 가게들의 카테고리의 비율을 계산하고 이를 원형그래프로 표현
+    """
+    cateDict = dict()
+    visitedX = []
+    visitedY = []
+    area = []
+    color = []
+    label = []
+    N = 0
+    for i,dd  in areaCategory.items():
+        for j,value in dd.items():
+            if len(value) > 0:
+                sorted_dict = sorted(value.items(), key = lambda item: item[1], reverse = True)
+                for q in sorted_dict:
+                    try:
+                        cateDict[q[0]] += q[1]
+                    except KeyError:
+                        cateDict[q[0]] = q[1]
+                    N += q[1]
+                visitedX.append(j)
+                visitedY.append(i)
+                area.append(sorted_dict[0][1])
+                color.append(sorted_dict[0][1])
+                label.append(sorted_dict[0][0])
+    
+    ratio = []
+    labels = []
+    sd = sorted(cateDict.items(), key = lambda item: item[1], reverse = True)
+    count = 0
+    for i in sd:
+        if i[1]/N < 0.01:
+            ratio.append((N-count)/N)
+            labels.append("etc")
+            break
+        ratio.append(i[1]/N)
+        labels.append(i[0])
+        count +=i[1]
+    plt.pie(ratio, labels=labels, autopct='%.1f%%')
+    plt.show()
+
+
+    """
+    
+    """
+    # arr = np.zeros((425,645))
+    ii = 0
+    for category_label in labels:
+        arr = np.zeros((425,645))
+        for i in range(len(arr)):
+            for j in range(len(arr[0])):
+                if len(areaCategory[i][j])>0:
+                    temp = sorted(areaCategory[i][j].items(), key = lambda item: item[1], reverse= True)
+                    try:
+                        x = areaCategory[i][j][category_label]
+                    except KeyError:
+                        continue
+                    maxIdx = len(temp) - 1
+                    if maxIdx > 4:
+                        maxIdx = 4
+                    if temp[maxIdx][1] <= x:
+                        arr[i][j] = 10
+        plt.imshow(arr, cmap=plt.get_cmap('inferno'))
+        plt.colorbar()
+        plt.show()  
+    # plt.imshow(arr, cmap=plt.get_cmap('inferno'))
+    # plt.colorbar()
+    # plt.show()              
+    """
+    각 지역의 가게 수의 분포를 산점도로 표현
+    """
+    arr = np.zeros((425,645))
+    visitedX = []
+    visitedY = []
+    area = []
+    color = []
+    for key, value in businessPos.items():
+        arr[value[0]][value[1]]+=1
+        
+    for i in range(len(arr)):
+        for j in range(len(arr[0])):
+            if arr[i][j] > 0:
+                visitedX.append(j)
+                visitedY.append(i)
+                area.append(arr[i][j])
+                color.append(arr[i][j])
+    plt.scatter(visitedX, visitedY,s = area, alpha = 0.3, c=color)
+    plt.colorbar()
+    plt.show()
+
+
+    """
+    각 지역에 대한 사용자들의 방문 빈도를 산점도로 표현 
+    """
+    visitedX = []
+    visitedY = []
+    area = []
+    color = []    
+    for i in range(len(visitedArea)):
+        for j in range(len(visitedArea[0])):
+            if(visitedArea[i][j] > 0.0):
+                area.append(visitedArea[i][j]/19453 * 500)
+                visitedX.append(j)
+                visitedY.append(i)
+                color.append(visitedArea[i][j]/19453)
+    # plt.matshow(visitedArea)
+    # plt.colorbar()
+    # plt.show()
+    # print(max(area))
+    plt.scatter(visitedX, visitedY,s = area, alpha = 0.3, c=color)
+    plt.colorbar()
+    plt.show()
+
+    
 if __name__ == "__main__":
-    getArea("39.86492399 -75.651673 _ 40.247267 -74.8937988281","39.86492399 -75.651673 _ 40.247267 -74.8937988281Review",1000)
+    drawInGraphs("39.86492399 -75.651673 _ 40.247267 -74.8937988281")
+    #getArea("39.86492399 -75.651673 _ 40.247267 -74.8937988281","39.86492399 -75.651673 _ 40.247267 -74.8937988281Review",100)
