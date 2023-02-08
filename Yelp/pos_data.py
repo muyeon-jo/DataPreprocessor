@@ -303,7 +303,73 @@ def drawInGraphs(city:str):
     plt.colorbar()
     plt.show()
 
+def userVisitDataPerArea(city:str):
+    userVisitData = pickle_load("./Yelp/data/"+city+" userVisitData")
+
+    #각 지역에 사용자가 방문한 횟수
+    #vector = np.zeros((425,645,len(userVisitData)))
+    vector = dict()
+    for i in range(425):
+        vector[i] = dict()
+        for j in range(645):
+            vector[i][j] = dict()
+    index2Id = dict()
+    id2Index = dict()
+    idx = 0
+    for k,v in userVisitData.items():
+        index2Id[idx] = k
+        id2Index[k] = idx
+        for i in v:
+            try:
+                vector[i[0]][i[1]][idx] += 1
+            except KeyError:
+                vector[i[0]][i[1]][idx] = 1
+        idx+=1
+
+    pickle_save(index2Id,"./Yelp/data/user_index2Id.pkl")
+    pickle_save(id2Index,"./Yelp/data/user_id2Index.pkl")
+    pickle_save(vector,"./Yelp/data/userVisitDataPerArea.pkl")
+
+def visitedCategoryPerArea(city:str):
+    areaCategory = pickle_load("./Yelp/data/"+city+" areaCategory")
     
+    index2Cate = dict()
+    cate2Index = dict()
+    idx = 0
+
+    for colNum,row in areaCategory.items():
+        for rowNum,area in row.items():
+            for i in area:
+                try:
+                    temp = cate2Index[i]
+                except KeyError:
+                    cate2Index[i] = idx
+                    index2Cate[idx] = i
+                    idx+=1
+
+    #vector = np.zeros((425,645,len(cate2Index)))
+    vector = dict()
+    for i in range(425):
+        vector[i] = dict()
+        for j in range(645):
+            vector[i][j] = dict()
+
+    for i in range(425):
+        for j in range(645):
+            for k, v in areaCategory[i][j].items():
+                try:
+                    vector[i][j][cate2Index[k]] += v
+                except KeyError:
+                    vector[i][j][cate2Index[k]] = v
+
+    pickle_save(index2Cate,"./Yelp/data/index2Cate.pkl")
+    pickle_save(cate2Index,"./Yelp/data/cate2Index.pkl")
+    pickle_save(vector,"./Yelp/data/visitedCategoryPerArea.pkl")
+
 if __name__ == "__main__":
-    drawInGraphs("39.86492399 -75.651673 _ 40.247267 -74.8937988281")
+    f = pickle_load("./Yelp/data/visitedCategoryPerArea.pkl")
+    userVisitDataPerArea("39.86492399 -75.651673 _ 40.247267 -74.8937988281")
+    print("1")
+    visitedCategoryPerArea("39.86492399 -75.651673 _ 40.247267 -74.8937988281")
+    #drawInGraphs("39.86492399 -75.651673 _ 40.247267 -74.8937988281")
     #getArea("39.86492399 -75.651673 _ 40.247267 -74.8937988281","39.86492399 -75.651673 _ 40.247267 -74.8937988281Review",100)
