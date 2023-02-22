@@ -17,6 +17,10 @@ def pickle_save(data, name):
 
 
 def extractBusinessWithPos(max_latitude, max_longitude, min_latitude, min_longitude):
+    """
+    Yelp 원본 데이터에서 특정 좌표(longitude, latitude)를 기준으로 그 좌표안에 해당하는 business(가게)정보만 추출하는 함수
+    """
+
     business = pd.read_csv("./Yelp/data/business.csv", engine='python', encoding = "ISO-8859-1")
     business = business.drop(["state","city","name","address","postal_code","stars","review_count","is_open","attributes","hours"],axis=1)
     temp = business[business['latitude'] >=min_latitude]
@@ -31,6 +35,10 @@ def extractBusinessWithPos(max_latitude, max_longitude, min_latitude, min_longit
             
 def getArea(business:str, review:str, size, minVisitedNum:int=1):
     """
+    원하는 business들의 데이터와 Yelp데이터의 review데이터를 읽어서 각 지역을 size(m) 만큼의 길이의 가로 세로를 가지는 직사각형(지역)들의 집합, 배열 형태로 만든 후 
+    각 지역들에 해당되는 배열에 각각 필요한 데이터를 입력하고 저장하는 함수
+
+
     """
     reviewData = pd.read_csv("./Yelp/data/"+review+".csv", engine='python', encoding = "ISO-8859-1",names =['user_id', 'business_id','text'], header = None)
     businessData = pd.read_csv("./Yelp/data/"+business+".csv", engine='python', encoding = "ISO-8859-1")
@@ -55,47 +63,51 @@ def getArea(business:str, review:str, size, minVisitedNum:int=1):
     delta = (longitude_max - longitude_min)/colnum
     areaRangeArr = np.zeros((rownum, colnum, 4))
     areaBusinessArr = dict()
-    # for i in range(rownum):
-    #     areaBusinessArr[i]=dict()
-    #     for j in range(colnum):
-    #         areaBusinessArr[i][j]=dict()
+    for i in range(rownum):
+        areaBusinessArr[i]=dict()
+        for j in range(colnum):
+            areaBusinessArr[i][j]=dict()
 
-    # businessPos = dict()
-    # for i in range(rownum):
-    #     lat_min = latitude_min + (latitude_max - latitude_min)/rownum*(i)
-    #     lat_max = latitude_min + (latitude_max - latitude_min)/rownum*(i+1)
-    #     for j in range(colnum):
-    #         lng_min = longitude_min + delta * j
-    #         lng_max = longitude_min + delta * (j+1)
+    businessPos = dict()
+    for i in range(rownum):
+        lat_min = latitude_min + (latitude_max - latitude_min)/rownum*(i)
+        lat_max = latitude_min + (latitude_max - latitude_min)/rownum*(i+1)
+        for j in range(colnum):
+            lng_min = longitude_min + delta * j
+            lng_max = longitude_min + delta * (j+1)
 
-    #         areaRangeArr[i][j][0] = lat_min
-    #         areaRangeArr[i][j][1] = lat_max
-    #         areaRangeArr[i][j][2] = lng_min
-    #         areaRangeArr[i][j][3] = lng_max
+            areaRangeArr[i][j][0] = lat_min
+            areaRangeArr[i][j][1] = lat_max
+            areaRangeArr[i][j][2] = lng_min
+            areaRangeArr[i][j][3] = lng_max
 
-    #         temp = businessData[businessData['latitude']>=lat_min]
-    #         temp = temp[temp['longitude']>=lng_min]
-    #         if j == colnum-1:
-    #             temp = temp[temp['longitude']<=lng_max]
-    #         else:
-    #             temp = temp[temp['longitude']<lng_max]
+            temp = businessData[businessData['latitude']>=lat_min]
+            temp = temp[temp['longitude']>=lng_min]
+            if j == colnum-1:
+                temp = temp[temp['longitude']<=lng_max]
+            else:
+                temp = temp[temp['longitude']<lng_max]
 
-    #         if i == rownum-1:
-    #             temp = temp[temp['latitude']<=lat_max]
-    #         else:
-    #             temp = temp[temp['latitude']<lat_max]
+            if i == rownum-1:
+                temp = temp[temp['latitude']<=lat_max]
+            else:
+                temp = temp[temp['latitude']<lat_max]
 
-    #         #각 가게들이 어디 지역에 존재하는지 저장
-    #         for index, data in temp.iterrows():
-    #             businessPos[data['business_id']] = (i,j)
+            #각 가게들이 어디 지역에 존재하는지 저장
+            for index, data in temp.iterrows():
+                businessPos[data['business_id']] = (i,j)
                 
-    #             temp = data['categories']
-    #             if type(temp) == str:
-    #                 temp = temp.split(", ")
-    #                 areaBusinessArr[i][j][data['business_id']] = temp
-    businessPos = pickle_load("./Yelp/data/"+business+" businessPos")
-    areaRangeArr = pickle_load("./Yelp/data/"+business+" Area range")
-    areaBusinessArr = pickle_load("./Yelp/data/"+business+" area list")
+                temp = data['categories']
+                if type(temp) == str:
+                    temp = temp.split(", ")
+                    areaBusinessArr[i][j][data['business_id']] = temp
+                    
+    pickle_save(areaRangeArr,"./Yelp/data/"+business+" "+str(size)+"m Area range")
+    pickle_save(areaBusinessArr,"./Yelp/data/"+business+" "+str(size)+"m area list")
+    pickle_save(businessPos,"./Yelp/data/"+business+" "+str(size)+"m businessPos")
+    # businessPos = pickle_load("./Yelp/data/"+business+" businessPos")
+    # areaRangeArr = pickle_load("./Yelp/data/"+business+" Area range")
+    # areaBusinessArr = pickle_load("./Yelp/data/"+business+" area list")
 
 
     userVisitData = dict()
@@ -137,12 +149,10 @@ def getArea(business:str, review:str, size, minVisitedNum:int=1):
                     except KeyError:
                         areaCategory[pos[0]][pos[1]][cg] = 1
 
-    # pickle_save(areaRangeArr,"./Yelp/data/"+business+" Area range")
-    # pickle_save(areaBusinessArr,"./Yelp/data/"+business+" area list")
-    # pickle_save(businessPos,"./Yelp/data/"+business+" businessPos")
+    
     print("dictionary length is : "+str(len(lengthCheckDict)))
-    pickle_save(areaCategory,"./Yelp/data/"+business+"_areaCategory")
-    pickle_save(visitedArea,"./Yelp/data/"+business+"_visitedArea")
+    pickle_save(areaCategory,"./Yelp/data/"+business+" "+str(size)+"m_areaCategory")
+    pickle_save(visitedArea,"./Yelp/data/"+business+" "+str(size)+"m_visitedArea")
     # review_len = len(reviewData)
 
 def drawInGraphs(city:str):
@@ -298,6 +308,9 @@ def userVisitDataPerArea(city:str):
     pickle_save(vector,"./Yelp/data/userVisitDataPerArea.pkl")
 
 def visitedCategoryPerArea(city:str):
+    """
+    지역 별 방문된 카테고리와 
+    """
     areaCategory = pickle_load("./Yelp/data/"+city+"areaCategory")
     
     index2Cate = dict()
@@ -337,11 +350,11 @@ def visitedCategoryPerArea(city:str):
 
         
 if __name__ == "__main__":
-    #getArea("39.86492399 -75.651673 _ 40.247267 -74.8937988281","39.86492399 -75.651673 _ 40.247267 -74.8937988281Review",100, minVisitedNum=10)
+    getArea("39.86492399 -75.651673 _ 40.247267 -74.8937988281","39.86492399 -75.651673 _ 40.247267 -74.8937988281Review",200, minVisitedNum=10)
 
-    userVisitDataPerArea("philadelphia10_")
-    print("1")
-    visitedCategoryPerArea("philadelphia10_")
+    #userVisitDataPerArea("philadelphia10_")
+    #print("1")
+    #visitedCategoryPerArea("philadelphia10_")
     #drawInGraphs("39.86492399 -75.651673 _ 40.247267 -74.8937988281")
     #getArea("39.86492399 -75.651673 _ 40.247267 -74.8937988281","39.86492399 -75.651673 _ 40.247267 -74.8937988281Review",100, minVisitedNum=10)
     #mergeData()
