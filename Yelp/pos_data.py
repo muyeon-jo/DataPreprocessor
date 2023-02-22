@@ -117,6 +117,7 @@ def getArea(business:str, review:str, size, minVisitedNum:int=1):
         areaCategory[i]=dict()
         for j in range(colnum):
             areaCategory[i][j] = dict()
+    
     tt = pickle_load("./Yelp/data/39.86492399 -75.651673 _ 40.247267 -74.8937988281 userVisitData")
     dropli = []
     for k,v in tt.items():
@@ -125,7 +126,7 @@ def getArea(business:str, review:str, size, minVisitedNum:int=1):
 
     for i in dropli:
         tt.pop(i)
-    pickle_save(tt,"./Yelp/data/"+business+"_userVisitData")
+    pickle_save(tt,"./Yelp/data/"+business+" "+str(size)+"_userVisitData")
     print("user ID len: {ul}".format(ul=len(tt)))
     #리뷰데이터 하나씩 읽으면서 사용자의 방문 데이터 작성
     count = 0
